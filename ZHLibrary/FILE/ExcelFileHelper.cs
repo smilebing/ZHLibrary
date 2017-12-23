@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using NPOI.SS.UserModel;
@@ -343,16 +345,26 @@ namespace ZHLibrary.FILE
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="modelList">excel数据源</param>
-        /// <param name="templetName">excel模板名称，在config文件中配置</param>
+        /// <param name="templetExcelPath">excel模板名称，在config文件中配置</param>
         /// <param name="startRow">数据起始行，默认为0</param>
         /// <param name="startCol">数据起始列，默认为0</param>
         /// <param name="exportPropertiesList">需要导出的参数List，默认为空则会导出model的所有字段，如果只需要导出model的指定字段，则在此list中添加字段的名称</param>
         /// <returns></returns>
-        public static MemoryStream ExportExcelFromTempler<T>(List<T> modelList, string templetName, int startRow = 0,
+        public static MemoryStream ExportExcelFromTempler<T>(List<T> modelList, string templetExcelPath, int startRow = 0,
             int startCol = 0, List<string> exportPropertiesList = null)
         {
+            //判断文件存在
+            if (!File.Exists(templetExcelPath))
+            {
+                throw new Exception(string.Format("无法找到模板:{0}", templetExcelPath));
+            }
+
+            FileStream fileStream = new FileStream(templetExcelPath, FileMode.Open);
             //从内存中获取模板
-            byte[] templetByte = ExcelReadHelper.GetInstance().ReadExcelStream(templetName);
+            byte[] templetByte = new byte[fileStream.Length];
+            fileStream.Read(templetByte, 0, templetByte.Length);
+            // 设置当前流的位置为流的开始
+            fileStream.Seek(0, SeekOrigin.Begin);
 
             //生成模板excel
             IWorkbook wk = new XSSFWorkbook(new MemoryStream(templetByte));
